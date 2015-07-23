@@ -9,6 +9,7 @@ var util = require("util");
 var rootDir = process.cwd;
 var filterPeriod = 6 ; //months
 var branchToCompare = 'origin/beta';
+var mergedBranches = [];
 
 if( !_.isEmpty(process.argv[2])){
 	rootDir = process.argv[2];
@@ -22,17 +23,14 @@ if( !_.isEmpty(process.argv[4])){
 	branchToCompare = process.argv[4];
 }
 
+
 Promise.all([
 	run("git", ['branch', '-r'], {cwd: rootDir}), 
 	run('git',  ['branch', '-r', '--merged', branchToCompare], {cwd: rootDir})]).spread(function (res, alreadyMerged) {
-	return _.chain(res.split("\n")).flatten().collect(function (branch) {
-		if(branch.indexOf("->")!=-1)
-			return "";
-		return branch.trim();
-	}).reject(function (branch) {
-		return _.isEmpty(branch);
-	}).value();
+	mergedBranches = parseBranchListing(alreadyMerged);
 	
+	console.log(mergedBranches);
+	return parseBranchListing(res);	
 })
 .then(processBranches)
 .then(function (branchInfos) {
@@ -45,7 +43,16 @@ Promise.all([
 });
 
 
-
+function parseBranchListing(res) {
+	return _.chain(res.split("\n")).flatten().collect(function (branch) {
+			if(branch.indexOf("->")!=-1)
+				return "";
+			return branch.trim();
+		}).reject(function (branch) {
+			return _.isEmpty(branch);
+		}).value();
+	
+}
 function run (cmd, args, opts) {
 	return new Promise(function function_name (resolve, reject) {
 		var allData = "", err = "";
@@ -73,7 +80,7 @@ function processBranches (branches) {
 	return Promise.map(branches, gitInfo)
 		.then(function function_name (branchDetails) {
 			return _.chain(branchDetails).filter(function oldBranches(details) {
-				return moment(details.lastCommitTime).isBefore(cutoffTime);
+				return moment(details.lastCommitTime).isBefore(cutoffTime) || details.merged;
 			}).groupBy(function (details) {
 				return moment(details.lastCommitTime).fromNow(true);
 			}).value();
@@ -91,6 +98,7 @@ function gitInfo(branch) {
 		// Bumping up version for breaking API compat
 		return {
 			name: branch,
+			merged: _.indexOf(mergedBranches, branch) !== -1,
 			sha: details[0].split(" ")[1], 
 			author: details[1].match("Author: (.*)")[1].trim(),
 			lastCommitTime: Date.parse(details[2].match('Date: (.*)')[1].trim()),
