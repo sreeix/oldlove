@@ -1,0 +1,21 @@
+{
+  "name": "oldlove",
+  "version": "1.0.0",
+  "description": "Finds old git branches",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "git",
+    "branch",
+    "stale"
+  ],
+  "author": "V Sreekanth",
+  "license": "BSD",
+  "dependencies": {
+    "bluebird": "^2.9.34",
+    "moment": "^2.10.3",
+    "underscore": "^1.8.3"
+  }
+}
